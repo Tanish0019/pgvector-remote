@@ -22,7 +22,7 @@ with the power of remote vector databases, by introducing a new remote vector in
 
 ```sql
 CREATE TABLE products (name text, embedding vector(1536), price float);
-CREATE INDEX my_remote_index ON products USING pinecone (embedding, price) with (host = 'my-pinecone-index.pinecone.io');
+CREATE INDEX my_remote_index ON products USING remote (embedding, price) with (host = 'my-pinecone-index.pinecone.io');
 -- [insert, update, and delete billions of records in products]
 SELECT * FROM products WHERE price < 40.0 ORDER BY embedding <-> '[...]' LIMIT 10; -- pinecone performs this query, including the price predicate
 
@@ -78,7 +78,7 @@ sudo apt-get install libcurl4-openssl-dev
 
 Set the pinecone API key in the postgres configuration. For example,
 ```sql
-ALTER DATABASE mydb SET pinecone.api_key = 'xxxxxxxx-xxxx-xxxx-xxxx–xxxxxxxxxxxx';
+ALTER DATABASE mydb SET remote.pinecone_api_key = 'xxxxxxxx-xxxx-xxxx-xxxx–xxxxxxxxxxxx';
 ```
 
 ## Index Creation
@@ -86,11 +86,11 @@ ALTER DATABASE mydb SET pinecone.api_key = 'xxxxxxxx-xxxx-xxxx-xxxx–xxxxxxxxxx
 There are two ways to specify the pinecone index:
 - By providing the host of an existing pinecone index. For example,
 ```sql
-CREATE INDEX my_remote_index ON products USING pinecone (embedding) with (host = 'example-23kshha.svc.us-east-1-aws.pinecone.io');
+CREATE INDEX my_remote_index ON products USING remote (embedding) with (host = 'example-23kshha.svc.us-east-1-aws.pinecone.io');
 ```
 - By specifying the `spec` of the pinecone index. For example,
 ```sql
-CREATE INDEX my_remote_index ON products USING pinecone (embedding) with (spec = '"spec": {
+CREATE INDEX my_remote_index ON products USING remote (embedding) with (spec = '{
         "serverless": {
             "region": "us-west-2",
             "cloud": "aws"
@@ -103,16 +103,16 @@ All spec options can be found [here](https://docs.pinecone.io/reference/api/cont
 
 - Place your pinecone index in the same region as your postgres instance to minimize latency.
 - Make use of connection pooling to run queries in postgres concurrently. For example, use `asyncpg` in python.
-- Records are sent to the remote index in batches. Therefore pgvector-remote performs a local scan of the unflushed records before every query. To disable this set `pinecone.max_buffer_scan` to 0. For example,
+- Records are sent to the remote index in batches. Therefore pgvector-remote performs a local scan of the unflushed records before every query. To disable this set `remote.max_buffer_scan` to 0. For example,
 ```sql
-ALTER DATABASE mydb SET pinecone.max_buffer_scan = 0;
+ALTER DATABASE mydb SET remote.max_buffer_scan = 0;
 ```
-- You can adjust the number of vectors sent in each request and the number of concurrent requests per batch using `pinecone.vectors_per_request` and `pinecone.requests_per_batch` respectively. For example,
+- You can adjust the number of vectors sent in each request and the number of concurrent requests per batch using `remote.pinecone_vectors_per_request` and `remote.requests_per_batch` respectively. For example,
 ```sql
-ALTER DATABASE mydb SET pinecone.vectors_per_request = 100; --default
-ALTER DATABASE mydb SET pinecone.requests_per_batch = 40; --default
+ALTER DATABASE mydb SET remote.pinecone_vectors_per_request = 100; --default
+ALTER DATABASE mydb SET remote.requests_per_batch = 40; --default
 ```
-- You can control the number of results returned by pinecone using `pinecone.top_k`. Lowering this parameter can decrease latencies, but keep in mind that setting this too low could cause fewer results to be returned than expected.
+- You can control the number of results returned by pinecone using `remote.top_k`. Lowering this parameter can decrease latencies, but keep in mind that setting this too low could cause fewer results to be returned than expected.
 
 ## Docker
 
